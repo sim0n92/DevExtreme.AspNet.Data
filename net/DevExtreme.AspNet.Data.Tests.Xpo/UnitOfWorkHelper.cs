@@ -21,7 +21,8 @@ namespace DevExtreme.AspNet.Data.Tests.Xpo {
                     dict.GetDataStoreSchema(
                         typeof(DefaultSort.DataItem),
                         typeof(RemoteGroupingStress.DataItem),
-                        typeof(Summary.DataItem)
+                        typeof(Summary.DataItem),
+                        typeof(SumOverflow.DataItem)
                     );
 
                     var provider = XpoDefault.GetConnectionProvider(

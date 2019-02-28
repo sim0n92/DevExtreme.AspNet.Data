@@ -32,6 +32,7 @@ namespace DevExtreme.AspNet.Data.Tests.EF6 {
             modelBuilder.Entity<SelectNotMapped_DataItem>();
             modelBuilder.Entity<RemoteGroupingStress_DataItem>();
             modelBuilder.Entity<Summary_DataItem>();
+            modelBuilder.Entity<SumOverflow_DataItem>();
         }
 
         public static void Exec(Action<TestDbContext> action) {

@@ -364,6 +364,21 @@ namespace DevExtreme.AspNet.Data.Tests {
             Assert.Equal(2d, loadResult.summary[0]);
         }
 
+        class SumOverflowDataItem : SumOverflowHelper.IEntity {
+            public byte? ByteProp { get; set; }
+            public short? Int16Prop { get; set; }
+            public int? Int32Prop { get; set; }
+            public float? SingleProp { get; set; }
+        }
+
+        [Fact]
+        public void SumOverflow() {
+            SumOverflowHelper.Run(SumOverflowHelper
+                .GenerateTestData(() => new SumOverflowDataItem())
+                .AsQueryable()
+            );
+        }
+
     }
 
 }
