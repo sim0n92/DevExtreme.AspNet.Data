@@ -18,8 +18,7 @@
     <DebugType>full</DebugType>
     <DocumentationFile>bin\Debug\$(TargetFramework)\DevExtreme.AspNet.Data.xml</DocumentationFile>
     <NoWarn>1591</NoWarn>
-    <!--<SignAssembly>false</SignAssembly>
-    <AssemblyOriginatorKeyFile>Local.snk</AssemblyOriginatorKeyFile>-->
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

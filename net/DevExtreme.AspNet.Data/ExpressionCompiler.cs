@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DevExtreme.AspNet.Data {
 
-    abstract class ExpressionCompiler {
+    public abstract class ExpressionCompiler {
         protected readonly Type ItemType;
         protected readonly bool GuardNulls;
 
