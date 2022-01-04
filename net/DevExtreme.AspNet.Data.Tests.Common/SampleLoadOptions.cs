@@ -9,8 +9,10 @@ namespace DevExtreme.AspNet.Data.Tests {
         public List<string> ExpressionLog = new List<string>();
 
         public SampleLoadOptions() {
+#if DEBUG
             UseEnumerableOnce = true;
             ExpressionWatcher = x => ExpressionLog.Add(x.ToString());
+#endif
         }
 
     }
