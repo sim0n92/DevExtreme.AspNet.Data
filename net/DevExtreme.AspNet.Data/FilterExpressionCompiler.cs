@@ -32,6 +32,12 @@ namespace DevExtreme.AspNet.Data {
             return Expression.Lambda(CompileCore(dataItemExpr, criteriaJson), dataItemExpr);
         }
 
+        public Expression<Func<T,bool>>? Compile<T>(IList criteriaJson) {
+            if(criteriaJson == default) return default;
+            var dataItemExpr = CreateItemParam<T>();
+            return Expression.Lambda<Func<T, bool>>(CompileCore(dataItemExpr, criteriaJson), dataItemExpr);
+        }
+
         Expression CompileCore(ParameterExpression dataItemExpr, IList criteriaJson) {
             if(IsCriteria(criteriaJson[0]))
                 return CompileGroup(dataItemExpr, criteriaJson);

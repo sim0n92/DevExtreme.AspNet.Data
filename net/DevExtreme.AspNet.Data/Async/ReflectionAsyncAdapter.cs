@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Driver;
+using MongoDB.Driver.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,13 +10,24 @@ using System.Threading.Tasks;
 
 namespace DevExtreme.AspNet.Data.Async {
 
-    class ReflectionAsyncAdapter : IAsyncAdapter {
+    //public static class IMyAsyncCursorSourceExtensions {
+    //    public static Task<List<TDocument>> ToListAsync<TDocument>(this IMongoQueryable<TDocument> source, CancellationToken cancellationToken = default(CancellationToken)) {
+    //        return IAsyncCursorSourceExtensions.ToListAsync(source, cancellationToken);
+    //    }
+    //    public static Task<long> CountAsync<TDocument>(this IMongoQueryable<TDocument> source, CancellationToken cancellationToken = default(CancellationToken)) {
+    //        return source.CountAsync(cancellationToken);
+    //    }
+    //}
+
+
+    internal class ReflectionAsyncAdapter : IAsyncAdapter {
         readonly QueryProviderInfo _providerInfo;
 
         public static bool SupportsProvider(QueryProviderInfo providerInfo)
             => providerInfo.IsEFCore
             || IsEF6(providerInfo)
             || providerInfo.IsNH
+            || providerInfo.IsMongoDB
             || providerInfo.IsXPO;
 
         static bool IsEF6(QueryProviderInfo providerInfo)
@@ -38,6 +51,9 @@ namespace DevExtreme.AspNet.Data.Async {
                 if(_providerInfo.IsXPO)
                     return XpoMethods.CountAsyncMethod;
 
+                if(_providerInfo.IsMongoDB)
+                    return MongoMethods.CountAsyncMethod;
+
                 throw new NotSupportedException();
             }
 
@@ -56,6 +72,9 @@ namespace DevExtreme.AspNet.Data.Async {
 
             if(_providerInfo.IsXPO)
                 return InvokeToArrayAsync<T>(XpoMethods.ToArrayAsyncMethod, provider, expr, cancellationToken);
+
+            if(_providerInfo.IsMongoDB)
+                return InvokeToListAsync<T>(MongoMethods.ToListAsyncMethod, provider, expr, cancellationToken);
 
             throw new NotSupportedException();
         }
@@ -77,6 +96,15 @@ namespace DevExtreme.AspNet.Data.Async {
                 var extensionsType = Type.GetType("Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions, Microsoft.EntityFrameworkCore");
                 CountAsyncMethod = FindCountAsyncMethod(extensionsType);
                 ToListAsyncMethod = FindToListAsyncMethod(extensionsType);
+            }
+        }
+
+        static class MongoMethods {
+            public static readonly MethodInfo CountAsyncMethod;
+            public static readonly MethodInfo ToListAsyncMethod;
+            static MongoMethods() {
+                CountAsyncMethod = FindCountAsyncMethod(typeof(MongoQueryable));
+                ToListAsyncMethod = FindToListAsyncMethod(typeof(IAsyncCursorSourceExtensions));
             }
         }
 
@@ -132,6 +160,9 @@ namespace DevExtreme.AspNet.Data.Async {
         async static Task<IEnumerable<T>> InvokeToArrayAsync<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
             => await (Task<T[]>)InvokeQueryExtensionMethod(method, typeof(T), provider.CreateQuery(expr), cancellationToken);
 
+        //async static Task<IEnumerable<T>> InvokeToArrayAsyncMongo<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
+        //    => await (Task<T[]>)InvokeQueryExtensionMethod(method, new Type[] { typeof(T), typeof(T) }, provider.CreateQuery(expr), cancellationToken);
+
         async static Task<IEnumerable<T>> InvokeToListAsync<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
             => await (Task<List<T>>)InvokeQueryExtensionMethod(method, typeof(T), provider.CreateQuery(expr), cancellationToken);
 
@@ -140,6 +171,12 @@ namespace DevExtreme.AspNet.Data.Async {
                 .MakeGenericMethod(elementType)
                 .Invoke(null, new object[] { query, cancellationToken });
         }
+
+        //static object InvokeQueryExtensionMethod(MethodInfo method, Type[] elementType, IQueryable query, CancellationToken cancellationToken) {
+        //    return method
+        //        .MakeGenericMethod(elementType)
+        //        .Invoke(null, new object[] { query, cancellationToken });
+        //}
 
     }
 

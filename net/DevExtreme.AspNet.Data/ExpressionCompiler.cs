@@ -99,6 +99,10 @@ namespace DevExtreme.AspNet.Data {
             return Expression.Parameter(ItemType, "obj");
         }
 
+        protected ParameterExpression CreateItemParam<T>() {
+            return Expression.Parameter(typeof(T), "obj");
+        }
+
         internal static void ForceToString(List<Expression> progression) {
             var last = progression.Last();
             if(last.Type != typeof(String))
