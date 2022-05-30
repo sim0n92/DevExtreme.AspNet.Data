@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("DevExtreme.AspNet.Data.Tests.Common")]
 // [assembly: InternalsVisibleTo("DevExtreme.AspNet.Data.Tests.Xpo")]
 #endif
-
 [assembly: CLSCompliant(true)]
 
 #if !DEBUG
