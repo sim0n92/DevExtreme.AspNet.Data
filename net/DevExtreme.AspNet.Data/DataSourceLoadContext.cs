@@ -13,6 +13,8 @@ namespace DevExtreme.AspNet.Data {
         readonly QueryProviderInfo _providerInfo;
         readonly Type _itemType;
 
+        public QueryProviderInfo ProviderInfo => _providerInfo;
+
         public DataSourceLoadContext(DataSourceLoadOptionsBase options, QueryProviderInfo providerInfo, Type itemType) {
             _options = options;
             _providerInfo = providerInfo;

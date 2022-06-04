@@ -226,9 +226,43 @@ namespace DevExtreme.AspNet.Data {
         }
 
         async Task<IEnumerable<AnonType>> ExecExprAnonAsync(Expression expr) {
-            return (await ExecExprAsync<object>(expr))
-                .Select(i => i is AnonType anon ? anon : new DynamicClassAdapter(i));
+            Type elementType = GetItemType(expr);
+
+            //var mi = GetType().GetMethod(nameof(ExecExprAsync), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+            //var mig = mi.MakeGenericMethod(elementType);
+            //var r = (Task)mig.Invoke(this, new object[] { expr });
+
+            var task = (Task)GetType()
+                                .GetMethod(nameof(ExecExprAsync), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
+                                .MakeGenericMethod(elementType)
+                                .Invoke(this, new object[] { expr });
+
+            await task.ConfigureAwait(false);
+            var some = (object)((dynamic)task).Result;
+
+            if(some is IEnumerable<AnonType> ie) {
+                return ie.Select(i => i is AnonType anon ? anon : new DynamicClassAdapter(i));
+            } else {
+                var list = new List<AnonType>();
+                foreach(var o in some as IEnumerable) {
+                    list.Add((o is AnonType anon) ? anon : new DynamicClassAdapter(o));
+                }
+                return list;
+            }
         }
+
+        Type[] GetQueryableGenericArguments(Expression expr) {
+            const string queryable1 = "IQueryable`1";
+            var type = expr.Type;
+
+            if(type.IsInterface && type.Name == queryable1)
+                return type.GenericTypeArguments;
+
+            return type.GetInterface(queryable1).GenericTypeArguments;
+        }
+
+        Type GetItemType(Expression expr)
+            => GetQueryableGenericArguments(expr).First();
 
         IList FilterFromKeys(IEnumerable<AnonType> keyTuples) {
             var result = new List<object>();

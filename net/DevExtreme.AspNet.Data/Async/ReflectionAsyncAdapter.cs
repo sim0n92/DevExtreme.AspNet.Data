@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using DevExtreme.AspNet.Data.Types;
+using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
@@ -160,24 +161,32 @@ namespace DevExtreme.AspNet.Data.Async {
         async static Task<IEnumerable<T>> InvokeToArrayAsync<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
             => await (Task<T[]>)InvokeQueryExtensionMethod(method, typeof(T), provider.CreateQuery(expr), cancellationToken);
 
-        //async static Task<IEnumerable<T>> InvokeToArrayAsyncMongo<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
-        //    => await (Task<T[]>)InvokeQueryExtensionMethod(method, new Type[] { typeof(T), typeof(T) }, provider.CreateQuery(expr), cancellationToken);
-
-        async static Task<IEnumerable<T>> InvokeToListAsync<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken)
-            => await (Task<List<T>>)InvokeQueryExtensionMethod(method, typeof(T), provider.CreateQuery(expr), cancellationToken);
+        
+        async static Task<IEnumerable<T>> InvokeToListAsync<T>(MethodInfo method, IQueryProvider provider, Expression expr, CancellationToken cancellationToken) {
+            var q = provider.CreateQuery(expr);
+            if(q is IAsyncCursorSource<T> asc) {
+                return await (Task<List<T>>)InvokeQueryExtensionMethod(method, typeof(T), asc, cancellationToken);
+            } else {
+                return await (Task<List<T>>)InvokeQueryExtensionMethod(method, typeof(T), q, cancellationToken);
+            }
+            
+        }
 
         static object InvokeQueryExtensionMethod(MethodInfo method, Type elementType, IQueryable query, CancellationToken cancellationToken) {
             return method
                 .MakeGenericMethod(elementType)
                 .Invoke(null, new object[] { query, cancellationToken });
+            
         }
 
-        //static object InvokeQueryExtensionMethod(MethodInfo method, Type[] elementType, IQueryable query, CancellationToken cancellationToken) {
-        //    return method
-        //        .MakeGenericMethod(elementType)
-        //        .Invoke(null, new object[] { query, cancellationToken });
-        //}
-
+        static object InvokeQueryExtensionMethod<T>(MethodInfo method, Type elementType, IAsyncCursorSource<T> query, CancellationToken cancellationToken) {
+            if(query is IAsyncCursorSource<T> asc) {
+                return method
+                    .MakeGenericMethod(elementType)
+                    .Invoke(null, new object[] { asc, cancellationToken });
+            } else {
+                throw new ApplicationException("InvokeQueryExtensionMethod need IAsyncCursorSource");
+            }
+        }
     }
-
 }
