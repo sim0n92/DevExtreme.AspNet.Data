@@ -10,6 +10,69 @@ using System.Threading.Tasks;
 
 namespace DevExtreme.AspNet.Data {
 
+    public class HelperExpressionCompiler : ExpressionCompiler {
+
+        public HelperExpressionCompiler(Type itemType, bool guardNulls = false)
+            : base(itemType, guardNulls) {
+        }
+
+        public Expression CompileAccessorExpression(Expression target, string clientExpr, bool liftToNullable = false) {
+            return CompileAccessorExpression(target, clientExpr, null, liftToNullable);
+        }
+    }
+
+    public static class CustomExpressionCompilers {
+
+        private static bool isElementCollection(Type type) {
+            return typeof(ICollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
+                   typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
+                   typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
+                   typeof(List<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
+                   typeof(HashSet<>).IsAssignableFrom(type.GetGenericTypeDefinition());
+        }
+
+        /// <summary>
+        /// Return operation name and true if it is negate
+        /// </summary>
+        /// <param name="op"></param>
+        /// <returns></returns>
+        private static (string, bool) GetCollectionMethod(string op) {
+            switch(op.ToLower()) {
+                case "contains": return new ("Contains", false);
+                case "notcontains": return new("Contains", true); // negate
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        public static Expression ICollectionFunctions(IBinaryExpressionInfo info) {
+
+            var compiler = new HelperExpressionCompiler(info.DataItemExpression.Type);
+
+            var accessorExpr = compiler.CompileAccessorExpression(info.DataItemExpression, info.AccessorText);
+            var oType = accessorExpr.Type;
+
+            // check type and if IClollection handle it if not , skip
+            if(oType.IsGenericType && isElementCollection(oType)) {
+                Type sourceCollectionType = oType.GetGenericArguments().FirstOrDefault();
+
+                //if(GuardNulls)
+                //    accessorExpr = Expression.Coalesce(accessorExpr, Expression.Constant(""));
+
+                var op = GetCollectionMethod(info.Operation);
+                var operationMethod = oType.GetMethod(op.Item1, new[] { sourceCollectionType });
+
+                Expression result = Expression.Call(accessorExpr, operationMethod, Expression.Constant(info.Value));
+
+                if(op.Item2)
+                    result = Expression.Not(result);
+
+                return result;
+            }
+            return null;
+        }
+    }
+
     public class FilterExpressionCompiler : ExpressionCompiler {
         const string
             CONTAINS = "contains",
