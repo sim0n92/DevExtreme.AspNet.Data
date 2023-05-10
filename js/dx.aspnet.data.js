@@ -367,7 +367,8 @@
 
     function getErrorMessageFromXhr(xhr) {
         var mime = xhr.getResponseHeader("Content-Type"),
-            responseText = xhr.responseText;
+            responseText = xhr.responseText,
+            candidate;
 
         if(!mime)
             return null;
@@ -391,6 +392,23 @@
             return responseText;
         }
 
+        if(mime.indexOf("application/problem+json") === 0) {
+            var jsonObj = safeParseJSON(responseText);
+
+            var candidate;
+            if(typeof jsonObj === "object") {
+                candidate = jsonObj.title;
+                if(isNonEmptyString(candidate))
+                    return candidate;
+
+                candidate = jsonObj.detail;
+                if(isNonEmptyString(candidate))
+                    return candidate;
+            }
+
+            return responseText;
+        }
+
         return null;
     }
 
@@ -400,6 +418,10 @@
         } catch(x) {
             return null;
         }
+    }
+
+    function isNonEmptyString(value) {
+        return typeof value === "string" && value.length > 0;
     }
 
     return {
